@@ -1,0 +1,8 @@
+interface:
+  display_name: "Yhub Deploy Site"
+  short_description: "Connect and deploy sites to Yhub"
+  brand_color: "#2563EB"
+  default_prompt: "Use $yhub-deploy-site to connect my Yhub account and deploy this website."
+
+policy:
+  allow_implicit_invocation: true

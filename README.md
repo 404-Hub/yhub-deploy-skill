@@ -2,6 +2,23 @@
 
 Codex skill for connecting an agent to Yhub and deploying websites through Yhub hosting.
 
+## Copy-Paste Install
+
+Paste this into Codex:
+
+```text
+Install the Codex skill from git@github.com:404-Hub/yhub-deploy-skill.git into ~/.codex/skills/yhub-deploy-site, then use $yhub-deploy-site when I ask you to deploy a website to Yhub.
+```
+
+Or install it directly:
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+git clone git@github.com:404-Hub/yhub-deploy-skill.git "${CODEX_HOME:-$HOME/.codex}/skills/yhub-deploy-site"
+```
+
+Start a new Codex thread if the skill does not appear immediately.
+
 ## What It Does
 
 - Starts the Yhub Connect Agent pairing flow.
@@ -22,7 +39,7 @@ Codex skill for connecting an agent to Yhub and deploying websites through Yhub 
 Clone this repository into a Codex skills directory:
 
 ```bash
-git clone git@github.com:404-Hub/yhub-deploy-skill.git yhub-deploy-site
+git clone git@github.com:404-Hub/yhub-deploy-skill.git "${CODEX_HOME:-$HOME/.codex}/skills/yhub-deploy-site"
 ```
 
 The folder name should remain `yhub-deploy-site` so it matches the skill name.

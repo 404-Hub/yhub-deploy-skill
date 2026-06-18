@@ -1,23 +1,28 @@
-# Yhub Deploy Site Skill
+# Yhub Deploy Site Agent Skill
 
-Codex skill for connecting an agent to Yhub and deploying websites through Yhub hosting.
+Reusable agent skill for connecting an AI agent to Yhub and deploying websites through Yhub hosting.
 
 ## Copy-Paste Install
 
-Paste this into Codex:
+Open the browser instructions:
+
+https://yhub.net/instructions/agent-skill
+
+Paste this into your AI agent:
 
 ```text
-Install the Codex skill from git@github.com:404-Hub/yhub-deploy-skill.git into ~/.codex/skills/yhub-deploy-site, then use $yhub-deploy-site when I ask you to deploy a website to Yhub.
+Install the Yhub deploy skill from https://github.com/404-Hub/yhub-deploy-skill into your agent's skills or instructions directory as yhub-deploy-site. Read SKILL.md before deploying. When I ask you to publish or update a site on Yhub, use that skill and follow the Yhub Connect Agent flow.
 ```
 
 Or install it directly:
 
 ```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-git clone git@github.com:404-Hub/yhub-deploy-skill.git "${CODEX_HOME:-$HOME/.codex}/skills/yhub-deploy-site"
+export AGENT_SKILLS_DIR="/path/to/your/agent/skills"
+mkdir -p "$AGENT_SKILLS_DIR"
+git clone https://github.com/404-Hub/yhub-deploy-skill.git "$AGENT_SKILLS_DIR/yhub-deploy-site"
 ```
 
-Start a new Codex thread if the skill does not appear immediately.
+Change `AGENT_SKILLS_DIR` if your agent uses a different skills directory. Start a new agent session if the skill does not appear immediately.
 
 ## What It Does
 
@@ -30,26 +35,26 @@ Start a new Codex thread if the skill does not appear immediately.
 ## Skill Contents
 
 - `SKILL.md` - agent-facing workflow and operational rules.
-- `agents/openai.yaml` - Codex UI metadata.
+- `agents/openai.yaml` - optional UI metadata for compatible agent clients.
 - `references/api-contract.md` - Yhub Agent API endpoint contract.
 - `scripts/wait-for-yhub-token.mjs` - helper for waiting on Connect Agent approval.
 
 ## Install
 
-Clone this repository into a Codex skills directory:
+Clone this repository into your agent's skills directory:
 
 ```bash
-git clone git@github.com:404-Hub/yhub-deploy-skill.git "${CODEX_HOME:-$HOME/.codex}/skills/yhub-deploy-site"
+git clone https://github.com/404-Hub/yhub-deploy-skill.git "$AGENT_SKILLS_DIR/yhub-deploy-site"
 ```
 
 The folder name should remain `yhub-deploy-site` so it matches the skill name.
 
 ## Usage
 
-Ask Codex to use the skill, for example:
+Ask your agent to use the skill, for example:
 
 ```text
-Use $yhub-deploy-site to connect my Yhub account and deploy this website.
+Use the yhub-deploy-site skill to connect my Yhub account and deploy this website.
 ```
 
 The agent will open the Yhub Connect Agent flow, wait for approval, deploy the site, and return the public URL.

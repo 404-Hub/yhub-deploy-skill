@@ -19,7 +19,7 @@ Response: `200 OK`
   "data": {
     "skill": {
       "name": "yhub-deploy-site",
-      "latest_version": "1.0.0",
+      "latest_version": "1.1.0",
       "minimum_supported_version": "1.0.0",
       "download_url": "https://yhub.net/api/v1/agent-skills/yhub-deploy-site.zip"
     },
@@ -27,12 +27,19 @@ Response: `200 OK`
       "version": "v1",
       "base_url": "https://yhub.net/api/v1"
     },
+    "sdk": {
+      "version": "1.0.0",
+      "browser_url": "https://yhub.net/sdk/v1/yhub.js",
+      "esm_url": "https://yhub.net/sdk/v1/yhub.esm.js",
+      "global": "yhub"
+    },
     "features": {
       "inline_static_deploy": true,
       "json_file_deploy": true,
       "zip_bundle_deploy": true,
       "php_deploy": true,
       "managed_database_api": true,
+      "javascript_sdk": true,
       "sqlite_file_deploy": false
     }
   }
@@ -438,6 +445,19 @@ The `plain_text_token` is returned once. Yhub stores only the token hash.
 Response: `204 No Content`
 
 ### Public Site Runtime API
+
+For browser code, load the absolute `data.sdk.browser_url` returned by the agent manifest and use the SDK instead of writing these HTTP calls manually:
+
+```html
+<script src="https://yhub.net/sdk/v1/yhub.js"></script>
+<script>
+  const products = yhub.db.collection('products')
+  const created = await products.create({ title: 'Demo' })
+  const rows = await products.list({ limit: 20 })
+</script>
+```
+
+The SDK defaults to the hosted site's current origin, discovers features through `GET /api/_meta`, stores `yusr_...` app-user tokens in `localStorage`, and sends `X-YHub-SDK-Version` on runtime calls. `YhubError` preserves the runtime's `status` and validation `errors`. Use the HTTP route details below for platform integration and debugging.
 
 Use the `plain_text_token` from token creation against server-protected public site routes:
 

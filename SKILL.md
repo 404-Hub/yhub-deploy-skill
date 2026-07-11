@@ -5,7 +5,7 @@ description: Use when the user wants an AI agent to connect to Yhub and deploy, 
 
 # Yhub Deploy Site
 
-Current skill version: `1.0.0`.
+Current skill version: `1.1.0`.
 
 Use this skill to publish websites to Yhub through the agent API. Yhub is static-first hosting with optional small PHP scripts; it is not a general application runtime. The user should not need to copy API headers or manually create tokens.
 
@@ -18,7 +18,7 @@ Use this skill to publish websites to Yhub through the agent API. Yhub is static
 5. Store the returned Bearer token for the current session.
 6. Create or update the site with production-ready files: static `html`/`css`/`js`, `files`, a ZIP `bundle`, or small PHP scripts when server-side logic is needed.
 7. Poll the site resource until `status.label` is `active` or `error`.
-8. If the user needs managed database-backed endpoints, enable the Database API for the site, create a runtime API token, and tell the user the entity routes and token handling.
+8. If the user needs managed database-backed endpoints, enable the Database API for the site and use the hosted YHub JavaScript SDK in browser code. Create a runtime API token only for server-protected access that will remain outside public browser code.
 9. Return the published `url` to the user.
 
 For exact endpoints and response shapes, read [references/api-contract.md](references/api-contract.md).
@@ -137,6 +137,38 @@ Underlying entity access modes:
 - `public`: no bearer token required.
 - `authenticated`: requires an app-user `yusr_...` token.
 - `owner`: requires an app-user `yusr_...` token and automatically scopes rows by system field `_user_id`.
+
+### JavaScript SDK
+
+Use the SDK for generated-site browser code instead of hand-written `fetch` calls. Read the current URLs and version from `GET /api/v1/agent-manifest` under `data.sdk`.
+
+```html
+<script src="https://yhub.net/sdk/v1/yhub.js"></script>
+<script>
+  const products = yhub.db.collection('products')
+  const rows = await products.list({ limit: 20 })
+</script>
+```
+
+Available database methods:
+
+- `collection.list({ limit, offset })`
+- `collection.get(id)`
+- `collection.create(data)`
+- `collection.update(id, data)` for a full `PUT`
+- `collection.patch(id, data)`
+- `collection.delete(id)`
+
+Available authentication methods:
+
+- `yhub.auth.register({ email, password, name })`
+- `yhub.auth.login({ email, password })`
+- `yhub.auth.me()`
+- `yhub.auth.logout()`
+
+The SDK stores app-user tokens in `localStorage` by default and accepts a custom token store. It exposes `yhub.files`, `yhub.ai`, and `yhub.realtime` as unavailable namespace stubs until those runtime features ship. Use `await yhub.meta()` for runtime feature discovery.
+
+The SDK defaults runtime requests to the generated site's current origin. Always use the absolute YHub app URL for the `<script>` source; do not use `/sdk/v1/yhub.js` from a generated site. Prefer public, authenticated, or owner access for browser apps. Never embed `ydb_...` server tokens in public JavaScript.
 
 Use the User-owned table preset for user-specific data such as todos, game progress, settings, inventories, notes, or SaaS records that should only be visible to the logged-in app user. Do not ask the customer to create `_user_id`; Yhub creates and fills it automatically. When auth is enabled, Yhub also exposes read-only system tables `_users` and `_user_tokens` in the UI.
 

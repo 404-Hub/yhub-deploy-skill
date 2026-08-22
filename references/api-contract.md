@@ -33,6 +33,13 @@ Response: `200 OK`
       "esm_url": "https://yhub.net/sdk/v1/yhub.esm.js",
       "global": "yhub"
     },
+    "php_sdk": {
+      "version": "0.2.0",
+      "repository_url": "https://github.com/404-Hub/yhub-telegram-sdk",
+      "distribution_url": "https://raw.githubusercontent.com/404-Hub/yhub-telegram-sdk/main/dist/yhub.php",
+      "composer_package": "yhub-cloud/php-sdk",
+      "minimum_php_version": "8.2"
+    },
     "features": {
       "inline_static_deploy": true,
       "json_file_deploy": true,
@@ -40,8 +47,19 @@ Response: `200 OK`
       "php_deploy": true,
       "managed_database_api": true,
       "javascript_sdk": true,
+      "php_sdk": true,
+      "managed_telegram_webhooks": true,
+      "password_protection": true,
       "sqlite_file_deploy": false
-    }
+    },
+    "release_notes": [
+      "Agents can deploy built static sites with zip bundles or JSON file payloads.",
+      "Paid users can protect deployed sites with shared HTTP Basic Authentication credentials.",
+      "Binary assets are supported via zip bundles or base64 JSON file entries.",
+      "SQLite/database file deployment is not supported; use the managed Database API.",
+      "Generated sites should use the YHub JavaScript SDK for managed runtime APIs.",
+      "YHub PHP SDK 0.2.0 supports managed Telegram bot handlers through Bot::serveFromYhub()."
+    ]
   }
 }
 ```

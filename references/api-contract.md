@@ -1,4 +1,4 @@
-# Yhub Agent API Contract
+# Yhub Agent API contract
 
 ## Base URL
 
@@ -6,7 +6,7 @@ https://yhub.net
 
 All API responses are JSON.
 
-## Agent Manifest
+## Agent manifest
 
 `GET /api/v1/agent-manifest`
 
@@ -19,7 +19,7 @@ Response: `200 OK`
   "data": {
     "skill": {
       "name": "yhub-deploy-site",
-      "latest_version": "1.1.0",
+      "latest_version": "1.2.0",
       "minimum_supported_version": "1.0.0",
       "download_url": "https://yhub.net/api/v1/agent-skills/yhub-deploy-site.zip"
     },
@@ -48,13 +48,13 @@ Response: `200 OK`
 
 If the installed skill is older than `minimum_supported_version`, stop and tell the user to update the skill from `download_url`.
 
-## Download Current Skill
+## Download the current skill
 
 `GET /api/v1/agent-skills/yhub-deploy-site.zip`
 
 This endpoint is public and returns the current `yhub-deploy-site` skill ZIP.
 
-## Start Connect Agent Pairing
+## Start Connect Agent pairing
 
 `POST /api/v1/agent-connections`
 
@@ -93,7 +93,7 @@ Successful response: `201 Created`
 }
 ```
 
-## Poll Pairing Status
+## Poll pairing status
 
 `GET /api/v1/agent-connections/{code}`
 
@@ -145,7 +145,7 @@ First poll after approval returns the token once:
 
 Subsequent polls do not include `access_token`.
 
-## Authenticated Requests
+## Authenticated requests
 
 Send the token as:
 
@@ -155,7 +155,7 @@ Accept: application/json
 Content-Type: application/json
 ```
 
-## Create Site
+## Create a site
 
 `POST /api/v1/sites`
 
@@ -229,7 +229,7 @@ Response: `202 Accepted`
 }
 ```
 
-## Create Site From ZIP Bundle
+## Create a site from a ZIP bundle
 
 `POST /api/v1/sites/bundles`
 
@@ -247,7 +247,7 @@ The ZIP may contain files at the root or inside one top-level folder such as `di
 
 Response: `202 Accepted`, same resource shape as create site.
 
-## Show Site / Poll Deployment
+## Show a site and poll deployment
 
 `GET /api/v1/sites/{site}`
 
@@ -258,7 +258,7 @@ Poll until:
 - `data.status.label === "active"`: success
 - `data.status.label === "error"`: failed; report `data.status.error`
 
-## Update Existing Site
+## Update an existing site
 
 `POST /api/v1/sites/{site}/deployments`
 
@@ -280,7 +280,7 @@ Response: `202 Accepted`, same resource shape as create site.
 
 For PHP-backed updates, deploy a PHP-capable file payload. Keep PHP scripts small and self-contained. Do not deploy SQLite or other database files; use the managed Database API for lightweight data. If a feature needs unsupported runtime behavior, use static assets plus a small PHP handler, call an external managed service, or keep the backend outside Yhub.
 
-## Update Existing Site From ZIP Bundle
+## Update an existing site from a ZIP bundle
 
 `POST /api/v1/sites/{site}/deployments/bundle`
 
@@ -296,13 +296,13 @@ Use this when the user wants lightweight database-backed CRUD endpoints such as 
 
 Platform ability required: `sites:database` or `sites:*`
 
-### Show Database Configuration
+### Show database configuration
 
 `GET /api/v1/sites/{site}/database`
 
 Response: `200 OK` when enabled, `404 Not Found` when not enabled.
 
-### Enable or Update Database Schema
+### Enable or update the database schema
 
 `PUT /api/v1/sites/{site}/database`
 
@@ -409,7 +409,7 @@ Response: `202 Accepted`
 
 Enabling this feature forces the site onto PHP release runtime. If the site has no current release, deploy or redeploy it after enabling the database.
 
-### Create Runtime Database Token
+### Create a runtime database token
 
 `POST /api/v1/sites/{site}/database/tokens`
 
@@ -438,13 +438,13 @@ Response: `201 Created`
 
 The `plain_text_token` is returned once. Yhub stores only the token hash.
 
-### Revoke Runtime Database Token
+### Revoke a runtime database token
 
 `DELETE /api/v1/sites/{site}/database/tokens/{token}`
 
 Response: `204 No Content`
 
-### Public Site Runtime API
+### Public site runtime API
 
 For browser code, load the absolute `data.sdk.browser_url` returned by the agent manifest and use the SDK instead of writing these HTTP calls manually:
 
@@ -491,7 +491,7 @@ Content-Type: application/json
 
 Owner-scoped rows are filtered by `_user_id`. Site runtime tokens (`ydb_...`) are server/admin tokens and bypass owner filtering.
 
-## Delete Site
+## Delete a site
 
 `DELETE /api/v1/sites/{site}`
 
@@ -499,7 +499,7 @@ Required ability: `sites:delete` or `sites:*`
 
 Do not use this unless the user explicitly asks to delete the site and the token has deletion permission.
 
-## Common Errors
+## Common errors
 
 - `401 Unauthorized`: reconnect to Yhub.
 - `403 Forbidden`: token lacks ability; reconnect with required permission.

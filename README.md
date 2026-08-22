@@ -1,8 +1,8 @@
-# Yhub Deploy Site Agent Skill
+# Yhub deploy site agent skill
 
 Reusable agent skill for connecting an AI agent to Yhub and deploying websites through Yhub hosting.
 
-## Copy-Paste Install
+## Copy-paste install
 
 Open the browser instructions:
 
@@ -24,19 +24,21 @@ git clone https://github.com/404-Hub/yhub-deploy-skill.git "$AGENT_SKILLS_DIR/yh
 
 Change `AGENT_SKILLS_DIR` if your agent uses a different skills directory. Start a new agent session if the skill does not appear immediately.
 
-## What It Does
+## What it does
 
 - Starts the Yhub Connect Agent pairing flow.
 - Deploys static HTML/CSS/JavaScript sites.
 - Deploys built frontend bundles and small PHP-backed sites.
 - Supports Yhub managed Database API setup for lightweight CRUD endpoints.
+- Deploys the YHub PHP SDK and managed Telegram bot handlers.
 - Polls deployment status and reports the published site URL.
 
-## Skill Contents
+## Skill contents
 
 - `SKILL.md` - agent-facing workflow and operational rules.
 - `agents/openai.yaml` - optional UI metadata for compatible agent clients.
 - `references/api-contract.md` - Yhub Agent API endpoint contract.
+- `references/php-sdk-telegram.md` - PHP SDK and managed Telegram bot workflow.
 - `scripts/wait-for-yhub-token.mjs` - helper for waiting on Connect Agent approval.
 
 ## Install

@@ -1,15 +1,15 @@
 ---
 name: yhub-deploy-site
-description: Use when the user wants an AI agent to connect to Yhub and deploy, publish, update, check, or add managed database APIs to a website through Yhub hosting. Covers Connect Agent browser pairing, Yhub API authentication, static HTML/CSS/JS sites, managed Database API endpoints, small PHP scripts for server-side logic or secrets, deployment polling, and user-facing status reporting.
+description: Use when the user wants an AI agent to connect to Yhub and deploy, publish, update, or check a hosted site. Covers Connect Agent pairing, static and built frontends, small PHP scripts, the YHub PHP SDK, managed Database API endpoints, managed Telegram bots, deployment polling, and status reporting.
 ---
 
-# Yhub Deploy Site
+# Yhub deploy site
 
-Current skill version: `1.1.0`.
+Current skill version: `1.2.0`.
 
 Use this skill to publish websites to Yhub through the agent API. Yhub is static-first hosting with optional small PHP scripts; it is not a general application runtime. The user should not need to copy API headers or manually create tokens.
 
-## Core Flow
+## Core flow
 
 1. Read `GET /api/v1/agent-manifest` and warn the user if this installed skill is below `minimum_supported_version`.
 2. If no Yhub Bearer token is available, start Connect Agent pairing.
@@ -19,11 +19,12 @@ Use this skill to publish websites to Yhub through the agent API. Yhub is static
 6. Create or update the site with production-ready files: static `html`/`css`/`js`, `files`, a ZIP `bundle`, or small PHP scripts when server-side logic is needed.
 7. Poll the site resource until `status.label` is `active` or `error`.
 8. If the user needs managed database-backed endpoints, enable the Database API for the site and use the hosted YHub JavaScript SDK in browser code. Create a runtime API token only for server-protected access that will remain outside public browser code.
-9. Return the published `url` to the user.
+9. If the user wants a Telegram bot, deploy the YHub PHP SDK and a managed webhook handler, then direct the user to connect the BotFather token in the site's Telegram settings. Read [references/php-sdk-telegram.md](references/php-sdk-telegram.md) before building or changing that handler.
+10. Return the published `url` to the user.
 
 For exact endpoints and response shapes, read [references/api-contract.md](references/api-contract.md).
 
-## Hosting Limits
+## Hosting limits
 
 Design for Yhub's current hosting model before building:
 
@@ -38,7 +39,7 @@ Design for Yhub's current hosting model before building:
 - Do not assume writable persistent storage, shell access, package installation on the host, process managers, custom web server configuration, or environment variable management unless the API contract explicitly exposes it.
 - If a requested feature needs unsupported runtime behavior, propose a static/PHP-compatible design, an external managed service, or ask the user to deploy that backend elsewhere.
 
-## Pairing Rules
+## Pairing
 
 - Never ask the user to paste a token unless the pairing flow is unavailable.
 - Show the `connect_url` plainly and tell the user it expires in 15 minutes.
@@ -55,7 +56,7 @@ node skills/yhub-deploy-site/scripts/wait-for-yhub-token.mjs "$POLL_URL"
 - The `access_token` is returned only once. Capture it immediately.
 - If the task includes enabling or managing Yhub's Database API, request `sites:database` in addition to the normal deployment abilities. Do not request it for ordinary static deployments.
 
-## Deployment Rules
+## Deployments
 
 - For simple static pages, send inline `html`, `css`, and `js`.
 - For multi-file, built frontend, or PHP-backed sites, send a `files` array of `{ "path": "...", "content": "...", "encoding": "text|base64" }` objects. Paths must be relative and must not contain traversal. Omit `encoding` for text files; use `base64` for binary assets.
@@ -70,6 +71,9 @@ node skills/yhub-deploy-site/scripts/wait-for-yhub-token.mjs "$POLL_URL"
 - If a site needs API keys, private tokens, webhooks, or other secrets, do not expose them in browser JavaScript. Put that logic in a PHP script and keep client-side code calling the PHP endpoint.
 - Never place Yhub access tokens, Database API runtime tokens, or third-party secrets in files deployed to public browser code.
 - Do not send SQLite, `.db`, or other database files in `files`; configure the managed Database API instead.
+- For a YHub-hosted Telegram bot, use the one-file PHP SDK distribution and `Bot::serveFromYhub()`. Do not deploy a Composer `vendor/` tree just for the SDK.
+- Never put a BotFather token or Telegram webhook secret in deployed files. YHub stores both outside the web root after the user connects the bot in the site's Telegram settings.
+- `/tg_webhook` is a reserved URL managed by YHub. Deploy `telegram.php`, or use `index.php` as a fallback, but do not create a `tg_webhook` file or register a second webhook yourself.
 
 ## Managed Database API
 
@@ -226,7 +230,7 @@ Important constraints:
 - Do not expose the `ydb_...` token in public browser code unless the user explicitly accepts that risk. For browser apps with per-user data, configure entity access as `authenticated` or `owner` and use `yusr_...` app-user tokens from `/api/auth/login` or `/api/auth/register`.
 - The managed Database API is for lightweight app data. For high-write workloads or relational business systems, recommend an external managed database/backend.
 
-## Status Handling
+## Deployment status
 
 - `created`, `in_setup`, `uploaded`, `permissions_set`: tell the user deployment is still running.
 - `active`: return the public URL.
@@ -235,7 +239,7 @@ Important constraints:
 - HTTP `403`: token lacks the needed permission; reconnect with the required ability.
 - HTTP `422`: show the validation error in simple user-facing language.
 
-## Supported Output
+## Files to deploy
 
 When creating the site, send production-ready content:
 

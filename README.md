@@ -31,6 +31,7 @@ Change `AGENT_SKILLS_DIR` if your agent uses a different skills directory. Start
 - Deploys built frontend bundles and small PHP-backed sites.
 - Supports Yhub managed Database API setup for lightweight CRUD endpoints.
 - Deploys the YHub PHP SDK and managed Telegram bot handlers.
+- Deploys and manages Yhub Scheduled Functions for short time-based work.
 - Polls deployment status and reports the published site URL.
 
 ## Skill contents
@@ -39,6 +40,7 @@ Change `AGENT_SKILLS_DIR` if your agent uses a different skills directory. Start
 - `agents/openai.yaml` - optional UI metadata for compatible agent clients.
 - `references/api-contract.md` - Yhub Agent API endpoint contract.
 - `references/php-sdk-telegram.md` - PHP SDK and managed Telegram bot workflow.
+- `references/scheduled-functions.md` - Scheduled Functions handler and idempotency contract.
 - `scripts/wait-for-yhub-token.mjs` - helper for waiting on Connect Agent approval.
 
 ## Install

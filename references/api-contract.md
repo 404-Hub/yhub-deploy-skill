@@ -19,7 +19,7 @@ Response: `200 OK`
   "data": {
     "skill": {
       "name": "yhub-deploy-site",
-      "latest_version": "1.2.0",
+      "latest_version": "1.3.0",
       "minimum_supported_version": "1.0.0",
       "download_url": "https://yhub.net/api/v1/agent-skills/yhub-deploy-site.zip"
     },
@@ -40,6 +40,20 @@ Response: `200 OK`
       "composer_package": "yhub-cloud/php-sdk",
       "minimum_php_version": "8.2"
     },
+    "scheduled_functions": {
+      "ability": "sites:schedules",
+      "handler": "scheduled.php",
+      "credential_delivery": "platform_runtime_only",
+      "endpoints": {
+        "index": "/api/v1/sites/{site}/schedules",
+        "store": "/api/v1/sites/{site}/schedules",
+        "show": "/api/v1/sites/{site}/schedules/{schedule}",
+        "update": "/api/v1/sites/{site}/schedules/{schedule}",
+        "destroy": "/api/v1/sites/{site}/schedules/{schedule}",
+        "run_now": "/api/v1/sites/{site}/schedules/{schedule}/runs",
+        "runs": "/api/v1/sites/{site}/schedules/{schedule}/runs"
+      }
+    },
     "features": {
       "inline_static_deploy": true,
       "json_file_deploy": true,
@@ -49,6 +63,7 @@ Response: `200 OK`
       "javascript_sdk": true,
       "php_sdk": true,
       "managed_telegram_webhooks": true,
+      "scheduled_functions": true,
       "password_protection": true,
       "sqlite_file_deploy": false
     },
@@ -58,7 +73,8 @@ Response: `200 OK`
       "Binary assets are supported via zip bundles or base64 JSON file entries.",
       "SQLite/database file deployment is not supported; use the managed Database API.",
       "Generated sites should use the YHub JavaScript SDK for managed runtime APIs.",
-      "YHub PHP SDK 0.2.0 supports managed Telegram bot handlers through Bot::serveFromYhub()."
+      "YHub PHP SDK 0.2.0 supports managed Telegram bot handlers through Bot::serveFromYhub().",
+      "Agents can deploy scheduled.php handlers and manage platform-triggered Scheduled Functions."
     ]
   }
 }
@@ -94,7 +110,7 @@ Request:
 Allowed abilities:
 
 ```json
-["sites:read", "sites:create", "sites:deploy", "sites:database", "sites:delete"]
+["sites:read", "sites:create", "sites:deploy", "sites:database", "sites:delete", "sites:schedules"]
 ```
 
 Successful response: `201 Created`
@@ -221,7 +237,7 @@ Supported file extensions include `.html`, `.htm`, `.css`, `.js`, `.mjs`, `.json
 
 Yhub hosting can run small PHP scripts when the deployment source includes PHP files, such as `index.php`, `contact.php`, or a small API handler. Use PHP for server-side secrets and private third-party API calls instead of exposing those values in `js`.
 
-Yhub is static-first hosting with optional small PHP scripts. Deploy compiled frontend output and small self-contained PHP files. Do not assume support for full backend frameworks, Node/SSR runtimes, MySQL/PostgreSQL-style database servers, queues, daemons, schedulers, WebSockets, containers, shell access, package installation on the host, writable persistent storage, or custom web server configuration unless the API explicitly documents that support.
+Yhub is static-first hosting with optional small PHP scripts. Deploy compiled frontend output and small self-contained PHP files. Do not assume support for full backend frameworks, Node/SSR runtimes, MySQL/PostgreSQL-style database servers, queues, daemons, self-managed schedulers, WebSockets, containers, shell access, package installation on the host, writable persistent storage, or custom web server configuration unless the API explicitly documents that support. Use the managed Scheduled Functions API for short time-based work.
 
 Response: `202 Accepted`
 
@@ -307,6 +323,50 @@ Required ability: `sites:deploy` or `sites:*`
 Use `multipart/form-data` with required field `bundle`, a ZIP file up to 100 MB.
 
 Response: `202 Accepted`, same resource shape as update site.
+
+## Scheduled Functions
+
+Deploy `scheduled.php` before creating a schedule. Required ability: `sites:schedules` or `sites:*`.
+
+The signing credential belongs to Yhub's runtime gateway. It is not an API input and must never be placed in a deployment payload, `scheduled.php`, browser JavaScript, or logs.
+
+### List schedules
+
+`GET /api/v1/sites/{site}/schedules`
+
+Optional query parameter: `per_page`, from 1 to 50.
+
+### Create a schedule
+
+`POST /api/v1/sites/{site}/schedules`
+
+```json
+{
+  "name": "daily-summary",
+  "cron": "0 8 * * *",
+  "timezone": "Europe/Lisbon",
+  "enabled": true
+}
+```
+
+Response: `201 Created`. Plan limits can reject unsupported frequency or schedule count with `422 Unprocessable Entity` or `409 Conflict`.
+
+### Show, update, and delete a schedule
+
+- `GET /api/v1/sites/{site}/schedules/{schedule}`
+- `PATCH /api/v1/sites/{site}/schedules/{schedule}` with any of `name`, `cron`, `timezone`, or `enabled`
+- `DELETE /api/v1/sites/{site}/schedules/{schedule}`
+
+Set `enabled` to `false` to pause and `true` to resume. Delete is soft deletion so retained run history remains readable.
+
+### Run now and read history
+
+- `POST /api/v1/sites/{site}/schedules/{schedule}/runs` returns `202 Accepted`
+- `GET /api/v1/sites/{site}/schedules/{schedule}/runs` returns paginated history
+
+A run resource includes `source`, `status`, timestamps, attempts, `queue_delay_ms`, HTTP status, duration, and a bounded error object. It never includes response bodies or runtime credentials. A manual smoke test has `source: "manual"`; confirm automation only from a successful history row with `source: "scheduled"`.
+
+Read [scheduled-functions.md](scheduled-functions.md) for the handler contract, event payload, and idempotency rules.
 
 ## Managed Database API
 

@@ -1,11 +1,11 @@
 ---
 name: yhub-deploy-site
-description: Use when the user wants an AI agent to connect to Yhub and deploy, publish, update, or check a hosted site. Covers Connect Agent pairing, static and built frontends, small PHP scripts, the YHub PHP SDK, managed Database API endpoints, managed Telegram bots, deployment polling, and status reporting.
+description: Use when the user wants an AI agent to connect to Yhub and deploy, publish, update, or check a hosted site. Covers Connect Agent pairing, static and built frontends, small PHP scripts, the YHub PHP SDK, managed Database API endpoints, managed Telegram bots, Scheduled Functions, deployment polling, and status reporting.
 ---
 
 # Yhub deploy site
 
-Current skill version: `1.2.0`.
+Current skill version: `1.3.0`.
 
 Use this skill to publish websites to Yhub through the agent API. Yhub is static-first hosting with optional small PHP scripts; it is not a general application runtime. The user should not need to copy API headers or manually create tokens.
 
@@ -20,7 +20,8 @@ Use this skill to publish websites to Yhub through the agent API. Yhub is static
 7. Poll the site resource until `status.label` is `active` or `error`.
 8. If the user needs managed database-backed endpoints, enable the Database API for the site and use the hosted YHub JavaScript SDK in browser code. Create a runtime API token only for server-protected access that will remain outside public browser code.
 9. If the user wants a Telegram bot, deploy the YHub PHP SDK and a managed webhook handler, then direct the user to connect the BotFather token in the site's Telegram settings. Read [references/php-sdk-telegram.md](references/php-sdk-telegram.md) before building or changing that handler.
-10. Return the published `url` to the user.
+10. If the site needs time-based work, deploy `scheduled.php`, request `sites:schedules`, then create and verify the schedule. Read [references/scheduled-functions.md](references/scheduled-functions.md) before building the handler.
+11. Return the published `url` to the user.
 
 For exact endpoints and response shapes, read [references/api-contract.md](references/api-contract.md).
 
@@ -32,7 +33,7 @@ Design for Yhub's current hosting model before building:
 - Frontend frameworks are supported only after they are built into static output. Build React, Vue, Svelte, Astro, Vite, or similar projects first, then deploy the generated files.
 - PHP support is for small, self-contained scripts such as `index.php`, `contact.php`, `api.php`, `webhook.php`, or simple form/API handlers.
 - PHP is appropriate for private API calls, secret-bearing logic, webhooks, simple routing, and small server-rendered responses.
-- PHP scripts should avoid framework bootstraps, large dependency trees, complex autoloaders, migration runners, queues, schedulers, daemons, workers, WebSockets, cron-like loops, or long-running processes.
+- PHP scripts should avoid framework bootstraps, large dependency trees, complex autoloaders, migration runners, queues, daemons, workers, WebSockets, self-managed cron-like loops, or long-running processes. Use Yhub-managed Scheduled Functions for short time-based work.
 - Do not deploy SQLite, `.db`, or other database files. Use Yhub's managed Database API for lightweight persistent data.
 - Prefer Yhub's managed Database API over hand-rolled PHP/SQLite when the user wants generic CRUD endpoints such as `/api/products`, `/api/posts`, or `/api/orders`.
 - Do not deploy Laravel, Symfony, WordPress, Node/Express, Next.js server rendering, Python, Ruby, Go, MySQL/PostgreSQL-style database servers, Redis, background workers, containers, or server processes unless Yhub explicitly adds support for that runtime.
@@ -55,6 +56,7 @@ node skills/yhub-deploy-site/scripts/wait-for-yhub-token.mjs "$POLL_URL"
 - If status is `expired`, start a new pairing session if the user still wants to continue.
 - The `access_token` is returned only once. Capture it immediately.
 - If the task includes enabling or managing Yhub's Database API, request `sites:database` in addition to the normal deployment abilities. Do not request it for ordinary static deployments.
+- If the task includes creating, updating, running, or reading Scheduled Functions, request `sites:schedules`. Do not request it for ordinary deployments.
 
 ## Deployments
 
@@ -66,6 +68,7 @@ node skills/yhub-deploy-site/scripts/wait-for-yhub-token.mjs "$POLL_URL"
 - Prefer subdomains unless the user explicitly provides a supported custom domain.
 - Do not request `sites:delete` by default.
 - Do not request `sites:database` by default; request it only when the user needs managed storage, CRUD endpoints, table/entity setup, or Database API tokens.
+- Do not request `sites:schedules` by default; request it only when the user needs time-based events or schedule management.
 - Treat `202 Accepted` as queued, not completed.
 - Poll `GET /api/v1/sites/{id}` until the site is `active` or `error`.
 - If a site needs API keys, private tokens, webhooks, or other secrets, do not expose them in browser JavaScript. Put that logic in a PHP script and keep client-side code calling the PHP endpoint.
@@ -74,6 +77,21 @@ node skills/yhub-deploy-site/scripts/wait-for-yhub-token.mjs "$POLL_URL"
 - For a YHub-hosted Telegram bot, use the one-file PHP SDK distribution and `Bot::serveFromYhub()`. Do not deploy a Composer `vendor/` tree just for the SDK.
 - Never put a BotFather token or Telegram webhook secret in deployed files. YHub stores both outside the web root after the user connects the bot in the site's Telegram settings.
 - `/tg_webhook` is a reserved URL managed by YHub. Deploy `telegram.php`, or use `index.php` as a fallback, but do not create a `tg_webhook` file or register a second webhook yourself.
+- For Scheduled Functions, deploy only the user handler `scheduled.php`. Yhub owns the signed runtime gateway and its credential; never deploy that credential, `_yhub_schedule.php`, or a browser-side scheduler.
+
+## Managed Scheduled Functions
+
+Use Scheduled Functions for short named events that Yhub triggers from a cron expression. Required platform ability: `sites:schedules` or `sites:*`.
+
+The safe order is:
+
+1. Read [references/scheduled-functions.md](references/scheduled-functions.md).
+2. Deploy a callable `scheduled.php` handler that treats `run_id` as its idempotency key.
+3. Wait until the deployment is active.
+4. Create the schedule through `POST /api/v1/sites/{site}/schedules`.
+5. Use run-now only as a handler smoke test. Confirm automation from run history where `source` is `scheduled`.
+
+The handler receives verified event data, never the signing credential. Do not add a secret field to deployment payloads, browser JavaScript, schedule requests, or logs.
 
 ## Managed Database API
 

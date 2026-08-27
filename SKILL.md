@@ -5,7 +5,7 @@ description: Use when the user wants an AI agent to connect to Yhub and deploy, 
 
 # Yhub deploy site
 
-Current skill version: `1.3.0`.
+Current skill version: `1.4.0`.
 
 Use this skill to publish websites to Yhub through the agent API. Yhub is static-first hosting with optional small PHP scripts; it is not a general application runtime. The user should not need to copy API headers or manually create tokens.
 
@@ -21,7 +21,8 @@ Use this skill to publish websites to Yhub through the agent API. Yhub is static
 8. If the user needs managed database-backed endpoints, enable the Database API for the site and use the hosted YHub JavaScript SDK in browser code. Create a runtime API token only for server-protected access that will remain outside public browser code.
 9. If the user wants a Telegram bot, deploy the YHub PHP SDK and a managed webhook handler, then direct the user to connect the BotFather token in the site's Telegram settings. Read [references/php-sdk-telegram.md](references/php-sdk-telegram.md) before building or changing that handler.
 10. If the site needs time-based work, deploy `scheduled.php`, request `sites:schedules`, then create and verify the schedule. Read [references/scheduled-functions.md](references/scheduled-functions.md) before building the handler.
-11. Return the published `url` to the user.
+11. If the site is a Telegram Mini App, read [references/telegram-mini-apps.md](references/telegram-mini-apps.md) before configuring auth or browser code.
+12. Return the published `url` to the user.
 
 For exact endpoints and response shapes, read [references/api-contract.md](references/api-contract.md).
 
@@ -185,6 +186,7 @@ Available authentication methods:
 
 - `yhub.auth.register({ email, password, name })`
 - `yhub.auth.login({ email, password })`
+- `yhub.auth.loginWithTelegram(initData)` for a custom Mini App flow
 - `yhub.auth.me()`
 - `yhub.auth.logout()`
 
@@ -232,6 +234,7 @@ Runtime routes:
 - `GET /api` lists entity names.
 - `POST /api/auth/register` creates an app user and returns a `yusr_...` token when `auth_enabled=true`.
 - `POST /api/auth/login` returns a `yusr_...` token when `auth_enabled=true`.
+- `POST /api/auth/telegram` verifies raw Telegram Mini App `initData` and returns a `yusr_...` token when the site has a connected Telegram bot.
 - `GET /api/auth/me` returns the current app user when `auth_enabled=true`.
 - `POST /api/auth/logout` revokes the current app-user token when `auth_enabled=true`.
 - `GET /api/{entity}` lists records, with optional `limit` and `offset`.

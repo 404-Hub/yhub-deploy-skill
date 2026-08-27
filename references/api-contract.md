@@ -19,7 +19,7 @@ Response: `200 OK`
   "data": {
     "skill": {
       "name": "yhub-deploy-site",
-      "latest_version": "1.3.0",
+      "latest_version": "1.4.0",
       "minimum_supported_version": "1.0.0",
       "download_url": "https://yhub.net/api/v1/agent-skills/yhub-deploy-site.zip"
     },
@@ -28,7 +28,7 @@ Response: `200 OK`
       "base_url": "https://yhub.net/api/v1"
     },
     "sdk": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "browser_url": "https://yhub.net/sdk/v1/yhub.js",
       "esm_url": "https://yhub.net/sdk/v1/yhub.esm.js",
       "global": "yhub"
@@ -62,6 +62,7 @@ Response: `200 OK`
       "managed_database_api": true,
       "javascript_sdk": true,
       "php_sdk": true,
+      "telegram_mini_app_auth": true,
       "managed_telegram_webhooks": true,
       "scheduled_functions": true,
       "password_protection": true,
@@ -73,6 +74,7 @@ Response: `200 OK`
       "Binary assets are supported via zip bundles or base64 JSON file entries.",
       "SQLite/database file deployment is not supported; use the managed Database API.",
       "Generated sites should use the YHub JavaScript SDK for managed runtime APIs.",
+      "YHub JavaScript SDK 1.1.0 supports Telegram Mini App authentication through yhub.telegram when the capability is enabled.",
       "YHub PHP SDK 0.2.0 supports managed Telegram bot handlers through Bot::serveFromYhub().",
       "Agents can deploy scheduled.php handlers and manage platform-triggered Scheduled Functions."
     ]

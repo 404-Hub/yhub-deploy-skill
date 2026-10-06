@@ -19,7 +19,7 @@ Response: `200 OK`
   "data": {
     "skill": {
       "name": "yhub-deploy-site",
-      "latest_version": "1.4.0",
+      "latest_version": "1.5.0",
       "minimum_supported_version": "1.0.0",
       "download_url": "https://yhub.net/api/v1/agent-skills/yhub-deploy-site.zip"
     },
@@ -28,7 +28,7 @@ Response: `200 OK`
       "base_url": "https://yhub.net/api/v1"
     },
     "sdk": {
-      "version": "1.1.0",
+      "version": "1.3.0",
       "browser_url": "https://yhub.net/sdk/v1/yhub.js",
       "esm_url": "https://yhub.net/sdk/v1/yhub.esm.js",
       "global": "yhub"
@@ -54,12 +54,14 @@ Response: `200 OK`
         "runs": "/api/v1/sites/{site}/schedules/{schedule}/runs"
       }
     },
+    "database_access": null,
     "features": {
       "inline_static_deploy": true,
       "json_file_deploy": true,
       "zip_bundle_deploy": true,
       "php_deploy": true,
       "managed_database_api": true,
+      "managed_database_roles": false,
       "javascript_sdk": true,
       "php_sdk": true,
       "telegram_mini_app_auth": true,
@@ -74,7 +76,7 @@ Response: `200 OK`
       "Binary assets are supported via zip bundles or base64 JSON file entries.",
       "SQLite/database file deployment is not supported; use the managed Database API.",
       "Generated sites should use the YHub JavaScript SDK for managed runtime APIs.",
-      "YHub JavaScript SDK 1.1.0 supports Telegram Mini App authentication through yhub.telegram when the capability is enabled.",
+      "YHub JavaScript SDK 1.3.0 supports Telegram Mini App authentication through yhub.telegram when the Telegram Mini App capability is enabled.",
       "YHub PHP SDK 0.2.0 supports managed Telegram bot handlers through Bot::serveFromYhub().",
       "Agents can deploy scheduled.php handlers and manage platform-triggered Scheduled Functions."
     ]
@@ -112,7 +114,7 @@ Request:
 Allowed abilities:
 
 ```json
-["sites:read", "sites:create", "sites:deploy", "sites:database", "sites:delete", "sites:schedules"]
+["sites:read", "sites:create", "sites:deploy", "sites:database", "sites:delete", "sites:schedules", "sites:database:access:read", "sites:database:access:write"]
 ```
 
 Successful response: `201 Created`
@@ -585,3 +587,42 @@ Do not use this unless the user explicitly asks to delete the site and the token
 - `403 Forbidden`: token lacks ability; reconnect with required permission.
 - `404 Not Found`: code or site does not exist, or the site does not belong to the user.
 - `422 Unprocessable Entity`: validation failed. Show the field error.
+
+## App users and role management
+
+Available only when the live manifest reports `features.managed_database_roles=true`. Before public rollout the field is false and `database_access` is null. Once released, `database_access` contains `runtime_version`, `read_ability`, `write_ability`, and the users/roles/assignment endpoint paths.
+
+Owner API uses a platform bearer token, never an app-user `yusr_` or runtime database `ydb_` token. `sites:database:access:read` allows management GETs. `sites:database:access:write` also allows mutations, including granting admin. `sites:*` and Sanctum `*` retain full access. Ordinary `sites:database` cannot manage app users or roles. All operations still check site ownership/platform-admin authorization.
+
+Paths below are relative to `/api/v1/sites/{site}/database`:
+
+| Method and path | Payload / result |
+|---|---|
+| GET `/users?search=...&limit=25&offset=0` | `{data:[profile],meta:{total,limit,offset}}`; limit 1–100, search max200, offset max10000000 |
+| GET `/users/{id}` | `{data:profile}` |
+| GET `/roles` | `{data:[role]}`; each has ID, slug, name, system, users_count, grants |
+| POST `/roles` | Full role definition; duplicate slug409 |
+| PUT `/roles` | `{roles:[definition,...]}`; atomic custom-role upsert by slug, does not delete omitted roles |
+| PATCH `/roles/{slug}` | Full definition with the same slug; replaces name and grants |
+| DELETE `/roles/{slug}` | Only unassigned custom roles; assigned role409, system role422 |
+| PUT `/users/{id}/roles` | `{roles:[slug,...]}`; replace additional roles atomically; base user retained |
+
+A role definition:
+
+```json
+{"slug":"editor","name":"Editor","grants":[{"entity":"posts","action":"read","scope":"all"},{"entity":"posts","action":"create"},{"entity":"posts","action":"update","scope":"owner"}]}
+```
+
+Role slugs match `[a-z][a-z0-9_]{0,47}` and cannot be renamed; display name max100 UTF-8 bytes. Maximum64 roles per site,400 grants per role,64 definitions/assignments per request,262144 bytes for helper input. Read/update/delete scopes are owner/all. Create has no scope. There are no direct per-user grants, deny rules or inheritance. Permissions union across roles, with all overriding owner. Batch definitions must be custom roles; errors roll back the whole request. Repeating identical PUT preserves IDs and memberships.
+
+Authentication seeds immutable `admin` and base `user`. Admin has CRUD all only on tables using roles. User starts without grants; PATCH may change its grants/name but not slug. Neither system role can be deleted. Profile fields are ID, nullable email/name, dates, string role slugs, effective `permissions` grants. Hashes and provider payloads are excluded.
+
+Configure a table with `access:{policy:"roles",read:"server",write:"server"}` and saved authentication enabled. The platform preserves the server modes as a safe baseline. To convert an existing public/authenticated/owner table, first save server/server access, wait for the published runtime update, then enable roles. The platform verifies the active runtime version/schema marker and installed access modes before accepting the transition. Old or incompatible releases cannot be activated for a site with role-policy tables. A deleted/recreated entity gets a new grant generation.
+
+Runtime maps GET/read, POST/create, PUT+PATCH/update, DELETE/delete. User-created rows always store their user ID. Owner-only access to another user's record returns404; missing action grant403. Create/update return `{data:{id}}` for app-user requests on role-policy tables. Fetch the record separately with read permission. Server database tokens retain read/write abilities.
+
+SDK1.3 provides optional `YhubUser.roles/permissions`, `auth.rolesSupported`, and `auth.can(entity,action,scope?)`. Missing profile fields mean unsupported roles; can returns false. Without scope, can means an action grant exists, not permission on an arbitrary row. Refresh `auth.me()` after access changes; runtime authorization is always authoritative. WriteResult types guarantee an ID and optional record fields.
+
+Management errors:401 missing platform authentication,403 scope/ownership denial,404 missing app user/role,409 auth disabled or assignment conflict,422 invalid/protected role/grants/quota,503 helper or auth runtime unavailable. Unavailable users are not an empty collection.
+
+Rollout имеет два server flags: `SITE_DATABASE_ACCESS_ENABLED` включает owner/panel bridge для canary и по умолчанию false в production; выключенный bridge возвращает503. `SITE_DATABASE_ACCESS_PUBLIC` объявляет capability в manifest только при enabled=true. Public=false само по себе не запрещает canary management через явно включённый bridge. Нормальные scopes/ownership checks действуют и на canary.

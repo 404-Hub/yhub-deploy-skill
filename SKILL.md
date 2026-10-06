@@ -5,7 +5,7 @@ description: Use when the user wants an AI agent to connect to Yhub and deploy, 
 
 # Yhub deploy site
 
-Current skill version: `1.4.0`.
+Current skill version: `1.5.0`.
 
 Use this skill to publish websites to Yhub through the agent API. Yhub is static-first hosting with optional small PHP scripts; it is not a general application runtime. The user should not need to copy API headers or manually create tokens.
 
@@ -279,3 +279,11 @@ Use PHP deliberately:
 - Avoid: large frameworks, package-heavy applications, migration runners, queues, background daemons, long-running workers, socket servers, or complex backend apps unless Yhub explicitly supports that deployment shape.
 
 Do not send source-only React/Vue/TypeScript projects through this skill yet unless the project has already been built into deployable static files or a small PHP-backed site. If build output is missing, build it locally first or ask the user for the build artifact.
+
+## App users and roles
+
+When the task includes role-based access, first read `features.managed_database_roles` in the live manifest. A false or missing value means the capability has not been released there. Read [the access contract](references/api-contract.md#app-users-and-role-management) for endpoints, schema transition and retry behavior.
+
+Request `sites:database:access:read` for inspection, or `sites:database:access:write` to create/update roles and assign them to users, including `admin`. Request write only when the user authorized access management. These scopes are separate from `sites:database` and are not default deployment scopes.
+
+The runtime SDK's `auth.can(entity, action, scope?)` uses the last received auth profile. Refresh with `auth.me()` after changes. An owner-only grant does not authorize an arbitrary record. Keep the platform token outside browser code.
